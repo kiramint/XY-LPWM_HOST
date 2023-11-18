@@ -83,11 +83,46 @@ namespace XY_LPWM_COM
         {
             handler.UartClose(sender, e);
         }
-        
+
+        private void SetPause(object sender, RoutedEventArgs e)
+        {
+            handler.SetPause(sender, e, this.SetPauseBox.Text);
+        }
     }
 
     public class WindowsHandler : INotifyPropertyChanged
     {
+        public static int pauseMs = 50;
+
+        public string PauseTextBox
+        {
+            get
+            {
+                return pauseMs + "";
+            }
+            set
+            {
+                try
+                {
+                    pauseMs = int.Parse(value);
+                    if (pauseMs <= 0 && pauseMs >= 10000)
+                    {
+                        throw new Exception("Out of range!");
+                    }
+                    OnPropertyChanged(nameof(PauseTextBox));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Not a valid number.\nDeatil: " + ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        public void SetPause(object sender, RoutedEventArgs e, string text)
+        {
+            PauseTextBox = text;
+        }
+
         //UART
         public static string FALL = "FALL  \n";
         public static string DOWN = "DOWN  \n";
@@ -111,7 +146,7 @@ namespace XY_LPWM_COM
                 return;
             }
             sp.Write("D666");
-            Thread.Sleep(30);
+            Thread.Sleep(pauseMs);
             string rtn = sp.ReadExisting();
             if (rtn != FALL)
             {
@@ -148,7 +183,7 @@ namespace XY_LPWM_COM
                 sp.Close();
                 return;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("Failed to close UART.\nDetail: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -166,7 +201,7 @@ namespace XY_LPWM_COM
                 MessageBox.Show("Set failed.\nDetail: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            Thread.Sleep(30);
+            Thread.Sleep(pauseMs);
             string rtn = sp.ReadExisting();
             if (rtn != DOWN)
             {
@@ -177,7 +212,7 @@ namespace XY_LPWM_COM
         public void UartRead()
         {
             sp.Write("read");
-            Thread.Sleep(50);
+            Thread.Sleep(pauseMs);
             string rtn = sp.ReadExisting();
             string freqStr, dutyStr;
             long tmpFreq = 100;
@@ -187,26 +222,28 @@ namespace XY_LPWM_COM
                 freqStr = rtn.Split("    ")[0];
                 dutyStr = rtn.Split("    ")[1];
                 freqStr = freqStr.Split("=")[1];
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 MessageBox.Show("Failed to read status.\nDetail: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            
+
             // Freq
-            if (freqStr.IndexOf("K")!=-1)
+            if (freqStr.IndexOf("K") != -1)
             {
-                freqStr=freqStr.Split('K')[0];
+                freqStr = freqStr.Split('K')[0];
                 try
                 {
-                    double temp=double.Parse(freqStr);
+                    double temp = double.Parse(freqStr);
                     temp *= 1000;
                     tmpFreq = (long)temp;
-                }catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     MessageBox.Show("Failed to read freq.\nDetail: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                
+
             }
             else
             {
@@ -229,7 +266,7 @@ namespace XY_LPWM_COM
                 dutyStr = dutyStr.Split("%")[0];
                 tmpDuty = int.Parse(dutyStr);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("Failed to read duty.\nDetail: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
